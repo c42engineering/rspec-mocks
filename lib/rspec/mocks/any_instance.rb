@@ -3,25 +3,38 @@ module RSpec
     module AnyInstance
       class Recorder
         attr_reader :messages
+        InvocationOrder = {
+          :with => [:stub],
+          :and_return => [:with, :stub]
+        }
         def initialize
           @messages = []
         end
 
         def stub(*args, &block)
-          @messages << [args.unshift(:stub), block]
-          self
+          record(:stub, args, block)
         end
 
         def with(*args, &block)
-          @messages << [args.unshift(:with), block]
-          self
+          record(:with, args, block)
         end
 
         def and_return(*args, &block)
-          @messages << [args.unshift(:and_return), block]
-          self
+          record(:and_return, args, block)
         end
 
+        def record(method_name, args, block)
+          if method_name != :stub && !InvocationOrder[method_name].include?(last_message)
+            raise(NoMethodError, "Undefined method #{method_name}")
+          end
+          @messages << [args.unshift(method_name), block]
+          self
+        end
+        
+        def last_message
+          @messages.last.first.first
+        end
+        
         def playback!(target)
           @messages.inject(target) do |target, message|
             target.__send__(*message.first, &message.last)
@@ -30,8 +43,18 @@ module RSpec
       end
 
       def any_instance
+        RSpec::Mocks::space.add(self) if RSpec::Mocks::space
         __decorate_new! unless respond_to?(:__new_without_any_instance__)
         __recorder
+      end
+            
+      def rspec_reset
+        @__recorder = nil
+        super
+      end
+      
+      def reset?
+        !@__recorder && super
       end
 
     private
