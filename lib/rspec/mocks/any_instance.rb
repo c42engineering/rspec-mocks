@@ -50,6 +50,7 @@ module RSpec
             
       def rspec_reset
         @__recorder = nil
+        __undecorate_new! if respond_to?(:__new_without_any_instance__)
         super
       end
       
@@ -62,7 +63,16 @@ module RSpec
       def __recorder
         @__recorder ||= AnyInstance::Recorder.new
       end
-
+      
+      def __undecorate_new!
+        self.class_eval do
+          class << self
+            alias_method  :new, :__new_without_any_instance__
+            remove_method :__new_without_any_instance__
+          end
+        end
+      end
+      
       def __decorate_new!
         self.class_eval do
           class << self
@@ -70,7 +80,8 @@ module RSpec
 
             def new(*args, &blk)
               instance = __new_without_any_instance__(*args, &blk)
-              __recorder.playback!(instance)
+              return instance if instance.is_a?(RSpec::Mocks::AnyInstance::Recorder)
+              __recorder.__send__(:playback!, instance)
               instance
             end
           end

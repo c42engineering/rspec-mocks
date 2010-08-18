@@ -3,10 +3,14 @@ require 'spec_helper'
 module RSpec
   module Mocks
     describe AnyInstance do
-      let(:klass) { Class.new }
+      let(:klass) { Foo = Class.new }
 
       describe "#any_instance" do 
-        context "with #stub" do
+        it "should raise an error if the method chain is in the wrong order" do
+          lambda{ klass.any_instance.with("1").stub(:foo) }.should raise_error(NoMethodError)
+        end
+        
+        context "with #stub" do          
           it "should not suppress an exception when a method that doesn't exist is invoked" do
             klass.any_instance.stub(:foo)
             lambda{ klass.new.bar }.should raise_error(NoMethodError)
@@ -38,17 +42,28 @@ module RSpec
             klass.new.foo.should == klass.new.foo
           end
         end
-
-        it "should raise an error if the method chain is in the wrong order" do
-          lambda{ klass.any_instance.with("1").stub(:foo) }.should raise_error(NoMethodError)
+        
+        context "when resetting after an example" do
+          it "restores the class to its original state after each example" do
+            space = RSpec::Mocks::Space.new
+            space.add(klass)
+            klass.any_instance.stub(:foo).and_return(1)
+            space.reset_all
+            lambda{ klass.new.foo }.should raise_error(NoMethodError)
+            klass.should_not respond_to(:__new_without_any_instance__)
+          end
+        
+          it "adds a class to the current space when #any_instance is invoked" do
+            klass.any_instance
+            RSpec::Mocks::space.send(:mocks).should include(klass)
+          end
         end
         
-        it "should restore the class to its original state after each example" do
-          space = RSpec::Mocks::Space.new
-          space.add(klass)
-          klass.any_instance.stub(:foo).and_return(1)
-          space.reset_all
-          lambda{ klass.new.foo }.should raise_error(NoMethodError)
+        context "ensuring core ruby objects aren't clobbered" do
+          it "should work uniformly across *everything*" do
+            Object.any_instance.stub(:foo).and_return(1)
+            Object.new.foo.should == 1
+          end
         end
       end
     end
