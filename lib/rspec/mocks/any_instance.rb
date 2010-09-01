@@ -50,8 +50,9 @@ module RSpec
             
       def rspec_reset
         @__recorder = nil
-        __undecorate_new! if respond_to?(:__new_without_any_instance__)
-        super
+        response = super
+        __undecorate_new! if __send__(:methods).include?(:__new_without_any_instance__)
+        response
       end
       
       def reset?
