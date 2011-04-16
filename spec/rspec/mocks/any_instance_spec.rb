@@ -221,6 +221,27 @@ module RSpec
               end.to raise_error(RSpec::Mocks::MockExpectationError, "The message 'foo' was received by #{instance_two.inspect} but has already been received by #{instance_one.inspect}")
             end
           end
+          
+          context "normal expectations on the class object" do
+            it "fail when unfulfilled" do
+              expect do
+                klass.any_instance.should_receive(:foo)
+                klass.should_receive(:woot)
+                klass.new.foo
+                klass.rspec_verify
+              end.to(raise_error(RSpec::Mocks::MockExpectationError) do |error|
+                error.message.should_not eq(existing_method_expectation_error_message)
+              end)
+            end
+            
+            
+            it "pass when expectations are met" do
+              klass.any_instance.should_receive(:foo)
+              klass.should_receive(:woot).and_return(result = Object.new)
+              klass.new.foo
+              klass.woot.should eq(result)
+            end
+          end
         end
 
         context "with an expectation is set on a method that exists" do
@@ -269,15 +290,6 @@ module RSpec
                 instance_two.existing_method
               end.to raise_error(RSpec::Mocks::MockExpectationError, "The message 'existing_method' was received by #{instance_two.inspect} but has already been received by #{instance_one.inspect}")
             end
-          end
-        end
-
-        context "resetting" do
-          it "does not interfere with expectations set on the class" do
-            expect do
-              klass.should_receive(:woot).and_return(3)
-              klass.rspec_verify
-            end.to raise_error(RSpec::Mocks::MockExpectationError)
           end
         end
 
