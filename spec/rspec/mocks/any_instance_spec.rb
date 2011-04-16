@@ -180,6 +180,15 @@ module RSpec
             end.to raise_error(RSpec::Mocks::MockExpectationError, 'Exactly one instance should have received the following message(s) but didn\'t: bar, foo')
           end
 
+          it "allows expectations on instances to take priority" do
+            klass.any_instance.should_receive(:foo)
+            klass.new.foo
+            
+            instance = klass.new
+            instance.should_receive(:foo).and_return(result = Object.new)
+            instance.foo.should eq(result)
+          end
+          
           context "after any one instance has received a message" do
             it "passes if subsequent invocations do not receive that message" do
               klass.any_instance.should_receive(:foo)
