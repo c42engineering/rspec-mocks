@@ -55,7 +55,21 @@ module RSpec
           klass.any_instance.stub(:foo)
           lambda{ klass.new.bar }.should raise_error(NoMethodError)
         end
-
+        
+        context "behaves as 'every instance'" do
+          it "stubs every instance in the spec" do
+            klass.any_instance.stub(:foo).and_return(result = Object.new)
+            klass.new.foo.should eq(result)
+            klass.new.foo.should eq(result)
+          end
+          
+          it "stubs instance created before any_instance was called" do
+            instance = klass.new
+            klass.any_instance.stub(:foo).and_return(result = Object.new)
+            instance.foo.should eq(result)
+          end
+        end
+        
         context "with #and_return" do
           it "stubs a method that doesn't exist" do
             klass.any_instance.stub(:foo).and_return(1)
@@ -189,7 +203,7 @@ module RSpec
             instance.foo.should eq(result)
           end
           
-          context "after any one instance has received a message" do
+          context "behaves as 'exactly one instance'" do
             it "passes if subsequent invocations do not receive that message" do
               klass.any_instance.should_receive(:foo)
               klass.new.foo
