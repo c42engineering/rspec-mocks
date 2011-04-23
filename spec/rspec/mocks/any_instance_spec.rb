@@ -8,11 +8,11 @@ module RSpec
       let(:klass) do
         Class.new do
           def existing_method; :existing_method_return_value; end
-          def another_existing_method; 4; end
+          def another_existing_method; end
         end
       end
       let(:existing_method_return_value){ :existing_method_return_value }
-
+      
       context "invocation order" do
         context "#stub" do
           it "raises an error if 'stub' follows 'with'" do
@@ -560,7 +560,18 @@ module RSpec
             end
           end
         end
-
+        
+        context "issue #54" do
+          it 'multiple calls to any_instance in the same example should not prevent the change from being rolled back' do
+            klass.any_instance.stub(:existing_method).and_return(false)
+            klass.any_instance.stub(:existing_method).and_return(true)
+            
+            klass.rspec_verify
+            klass.new.should respond_to(:existing_method)
+            klass.new.existing_method.should eq(existing_method_return_value)
+          end
+        end
+        
         it "adds an class to the current space when #any_instance is invoked" do
           klass.any_instance
           RSpec::Mocks::space.send(:mocks).should include(klass)
@@ -573,6 +584,7 @@ module RSpec
           RSpec::Mocks::space.send(:mocks).should include(instance)
         end
       end
+    
     end
   end
 end
