@@ -120,7 +120,7 @@ module RSpec
           @message_chains[method_name] = ExpectationChain.new(method_name, *args, &block)
         end
 
-        def stop_observing!
+        def stop_all_observation!
           @observed_methods.each do |method_name|
             restore_method!(method_name)
           end
@@ -201,7 +201,17 @@ module RSpec
           end
         end
         
+        def stop_observing!(method_name)
+          restore_method!(method_name)
+          @observed_methods.delete(method_name)
+        end
+        
+        def already_observing?(method_name)
+          @observed_methods.include?(method_name)
+        end
+        
         def observe!(method_name)
+          stop_observing!(method_name) if already_observing?(method_name)
           @observed_methods << method_name
           backup_method!(method_name)
           @klass.class_eval(<<-EOM, __FILE__, __LINE__)
@@ -234,7 +244,7 @@ module RSpec
         __recorder.verify
         super
       ensure
-        __recorder.stop_observing!
+        __recorder.stop_all_observation!
         @__recorder = nil
       end
 
