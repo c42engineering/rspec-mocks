@@ -177,7 +177,6 @@ module RSpec
         end
 
         @order_group.handle_order_constraint self
-
         begin
           raise_exception unless @exception_to_raise.nil?
           Kernel::throw(*@args_to_throw) unless @args_to_throw.empty?
@@ -189,7 +188,7 @@ module RSpec
                                else
                                  nil
                                end
-
+          p "default_return_val",default_return_val
           if @consecutive
             invoke_consecutive_return_block(*args, &block)
           elsif @return_block

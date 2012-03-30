@@ -66,6 +66,7 @@ module RSpec
 
       # @private
       def configure_method
+        p "configure"
         RSpec::Mocks::space.add(@object) if RSpec::Mocks::space
         warn_if_nil_class
         unless @stashed

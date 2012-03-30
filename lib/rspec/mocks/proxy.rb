@@ -112,6 +112,7 @@ module RSpec
 
       # @private
       def message_received(message, *args, &block)
+        p "message received"
         expectation = find_matching_expectation(message, *args)
         stub = find_matching_method_stub(message, *args)
 
